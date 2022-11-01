@@ -2,22 +2,36 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"sync/atomic"
 	"time"
 )
 
 type App struct {
-	runningId int64
-	tasks     chan ScheduleRequest
+	runningId   int64
+	tasks       chan *task
+	runningTask *task
+
+	lock *sync.Mutex
 }
 
 func (a *App) Start() {
 	go func() {
 		log.Println("Server started")
 		for task := range a.tasks {
-			log.Printf("processing: %d", task.id)
+
+			a.lock.Lock()
+			a.runningTask = task
+			a.lock.Unlock()
+
+			task.run()
+
+			a.lock.Lock()
+			a.runningTask = nil
+			a.lock.Unlock()
 		}
 	}()
 }
@@ -30,7 +44,7 @@ func (a *App) ScheduelHandler(w http.ResponseWriter, r *http.Request) {
 func (a *App) schedule() ScheduleResponse {
 	id := atomic.AddInt64(&a.runningId, 1)
 	select {
-	case a.tasks <- ScheduleRequest{
+	case a.tasks <- &task{
 		id: id,
 	}:
 		return ScheduleResponse{Id: id}
@@ -40,7 +54,16 @@ func (a *App) schedule() ScheduleResponse {
 }
 
 func (a *App) KillHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("killed"))
+	a.lock.Lock()
+	defer a.lock.Unlock()
+
+	t := a.runningTask
+	if t == nil {
+		w.Write([]byte("no running tasks"))
+	} else {
+		t.stop = true
+		w.Write([]byte(fmt.Sprintf("killed task with id %d", t.id)))
+	}
 }
 
 func (a *App) StatusHandler(w http.ResponseWriter, r *http.Request) {

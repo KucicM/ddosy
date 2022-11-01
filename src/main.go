@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/mux"
 )
@@ -14,7 +15,8 @@ func main() {
 	queueSize := flag.Int("queueSize", 1, "max queue size")
 
 	a := &App{
-		tasks: make(chan ScheduleRequest, *queueSize),
+		tasks: make(chan *task, *queueSize),
+		lock: &sync.Mutex{},
 	}
 	a.Start()
 
