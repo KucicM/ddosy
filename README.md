@@ -7,7 +7,8 @@
 
 ## API
 
-### Schedule new load test
+### Schedule new task
+
 ```
 curl --request POST\
   --url 'localhost:4000/schedule'\
@@ -15,12 +16,14 @@ curl --request POST\
 ```
 
 
-### Get status
+### Get status of the task or results if the task is done
+
 ```
 curl --request GET --url 'localhost:4000/status?id=1' 
 ```
 
-### Kill running load test
+### Kill the running task
+
 ```
 curl --request DEL --url 'localhost:4000/kill'
 ```
