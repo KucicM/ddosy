@@ -1,5 +1,9 @@
 package ddosy
 
+import (
+	"net/http"
+)
+
 type ScheduleResponseWeb struct {
 	Id    int64  `json:"id"`
 	Error string `json:"error"`
@@ -31,6 +35,49 @@ type SineLoadWeb struct {
 	Mean   int    `json:"mean"`
 	Amp    int    `json:"amplitude"`
 	Period string `json:"period"`
+}
+
+// internal
+type LoadTask struct {
+	id int64
+
+}
+
+func NewTrafficPattern(endpoint string, patterns []TrafficPatternWeb) TrafficPattern {
+
+	ws := make([]float64, len(patterns))
+	payloads := make([][]byte, len(patterns))
+	for i, p := range patterns {
+		ws[i] = p.Weight
+		payloads[i] = []byte(p.Payload)
+	}
+
+	dist := TrafficDistribution{
+		weigths: CreateDistribution(ws),
+		payloads: payloads,
+	}
+
+
+	header := http.Header{}
+	header.Add("Content-Type", "application/json")
+	return TrafficPattern{
+		endpoint: endpoint,
+		header: header,
+		method: http.MethodPost,
+		dist: dist,
+	}
+}
+
+type TrafficPattern struct {
+  endpoint string
+  header http.Header
+  method string
+  dist TrafficDistribution
+}
+
+type TrafficDistribution struct {
+	weigths []float64
+	payloads [][]byte
 }
 
 // func (p LoadPattern) Pacer() (vegeta.Pacer, error) {

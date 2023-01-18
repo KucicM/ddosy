@@ -3,7 +3,6 @@ module github.com/kucicm/ddosy
 go 1.18
 
 require (
-	github.com/gorilla/mux v1.8.0
 	github.com/tsenart/vegeta/v12 v12.8.4
 )
 
