@@ -17,7 +17,8 @@ func main() {
 		MaxQueue: *queue,
 	}
 
-	app := ddosy.NewServer(cfg)
-	log.Fatalln(app.ListenAndServe())
+	// app := ddosy.NewServer(cfg)
+	log.Fatalln(ddosy.Start(cfg))
+	// log.Fatalln(app.ListenAndServe())
 
 }

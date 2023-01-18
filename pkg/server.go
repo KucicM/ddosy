@@ -1,116 +1,130 @@
 package ddosy
 
-import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
-	"sync"
-	"sync/atomic"
-	"time"
+// import (
+// 	"encoding/json"
+// 	"fmt"
+// 	"log"
+// 	"net/http"
+// 	"sync"
+// 	"sync/atomic"
+// 	"time"
 
-	"github.com/gorilla/mux"
-)
+// 	vegeta "github.com/tsenart/vegeta/v12/lib"
+// )
 
-type ServerConfig struct {
-	Port     int
-	MaxQueue int
-}
+// func Start(cfg ServerConfig) error {
+// 	s := newServer(cfg)
+// 	// routing
+// 	mux := http.NewServeMux()
+// 	mux.HandleFunc("/run", s.runHandler)
+// 	mux.HandleFunc("/status", s.statusHandler)
+// 	mux.HandleFunc("/kill", s.killHandler)
 
-type Server struct {
-	runningId   int64
-	tasks       chan *task
-	runningTask *task
+// 	// server config
+// 	srv := &http.Server{
+// 		Handler: mux,
+// 		Addr:    fmt.Sprintf(":%d", cfg.Port),
+// 	}
 
-	lock *sync.Mutex
-	srv  *http.Server
-}
+// 	return srv.ListenAndServe()
+// }
 
-func NewServer(cfg ServerConfig) *Server {
 
-	// instance
-	s := &Server{
-		tasks: make(chan *task, cfg.MaxQueue),
-		lock:  &sync.Mutex{},
-	}
+// type ServerConfig struct {
+// 	Port     int
+// 	MaxQueue int
+// }
 
-	// routing
-	r := mux.NewRouter()
-	r.PathPrefix("/schedule").HandlerFunc(s.scheduelHandler).Methods("POST")
-	r.PathPrefix("/status").HandlerFunc(s.statusHandler).Methods("GET")
-	r.PathPrefix("/kill").HandlerFunc(s.killHandler).Methods("DEL")
+// type server struct {
+// 	runningId   int64
+// 	tasks       chan *task
+// 	runningTask *task
 
-	// server config
-	s.srv = &http.Server{
-		Handler: r,
-		Addr:    fmt.Sprintf(":%d", cfg.Port),
-	}
+// 	lock *sync.Mutex
+// }
 
-	// consume worker
-	go func() {
-		log.Println("Server started")
-		for task := range s.tasks {
+// func newServer(cfg ServerConfig) *server {
+// 	// instance
+// 	s := &server{
+// 		tasks: make(chan *task, cfg.MaxQueue),
+// 		lock:  &sync.Mutex{},
+// 	}
 
-			s.lock.Lock()
-			s.runningTask = task
-			s.lock.Unlock()
+// 	// consume worker
+// 	go s.runner()
 
-			task.run()
+// 	return s
+// }
 
-			s.lock.Lock()
-			s.runningTask = nil
-			s.lock.Unlock()
-		}
-	}()
+// func (s *server) runner() {
+// 	log.Println("Server started")
+// 	for task := range s.tasks {
+// 		s.lock.Lock()
+// 		s.runningTask = task
+// 		s.lock.Unlock()
 
-	return s
-}
+// 		targeter := NewWeightedTargeter(task.req.TrafficPatterns)
+// 		attacker := vegeta.NewAttacker()
+// 		main: for _, load := range task.req.LoadPatterns {
+// 			pacer, _ := load.Pacer()
+// 			for _ = range attacker.Attack(targeter, pacer, load.duration(), "attack") {
+// 				if task.shouldStop() {
+// 					attacker.Stop()
+// 					break main
+// 				}
+// 			}
+// 		}
 
-func (s *Server) ListenAndServe() error {
-	return s.srv.ListenAndServe()
-}
+// 		// TODO metrics
 
-// add task to a queue
-func (a *Server) scheduelHandler(w http.ResponseWriter, r *http.Request) {
-	var req ScheduleRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+// 		s.lock.Lock()
+// 		s.runningTask = nil
+// 		s.lock.Unlock()
+// 	}
+// }
 
-	resp := a.schedule(req)
-	json.NewEncoder(w).Encode(resp)
-}
+// // add task to a queue
+// func (a *server) runHandler(w http.ResponseWriter, r *http.Request) {
+// 	var req LoadRequest
+// 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-func (a *Server) schedule(req ScheduleRequest) ScheduleResponse {
-	if err := req.Validate(); err != nil {
-		return ScheduleResponse{Error: err.Error()}
-	}
+// 	if err := ValidateLoadRequest(req); err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return 
+// 	}
 
-	id := atomic.AddInt64(&a.runningId, 1)
-	select {
-	case a.tasks <- &task{id: id}:
-		return ScheduleResponse{Id: id}
-	case <-time.After(time.Second):
-		return ScheduleResponse{Error: "queue is full"}
-	}
-}
+// 	resp := a.addToQ(req)
+// 	json.NewEncoder(w).Encode(resp)
+// }
 
-// kill currently running task
-func (a *Server) killHandler(w http.ResponseWriter, r *http.Request) {
-	a.lock.Lock()
-	defer a.lock.Unlock()
+// func (a *server) addToQ(req LoadRequest) ScheduleResponse {
+// 	id := atomic.AddInt64(&a.runningId, 1)
+// 	select {
+// 	case a.tasks <- &task{id: id, req: req}:
+// 		return ScheduleResponse{Id: id}
+// 	case <-time.After(time.Millisecond):
+// 		return ScheduleResponse{Error: "queue is full"}
+// 	}
+// }
 
-	t := a.runningTask
-	if t == nil {
-		w.Write([]byte("no running tasks"))
-	} else {
-		t.stop = true
-		w.Write([]byte(fmt.Sprintf("killed task with id %d", t.id)))
-	}
-}
+// // kill currently running task
+// func (a *server) killHandler(w http.ResponseWriter, r *http.Request) {
+// 	a.lock.Lock()
+// 	defer a.lock.Unlock()
 
-// what is current status of the task or what are results if the task is done
-func (a *Server) statusHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("status"))
-}
+// 	t := a.runningTask
+// 	if t == nil {
+// 		w.Write([]byte("no running tasks"))
+// 	} else {
+// 		t.stop = true
+// 		w.Write([]byte(fmt.Sprintf("killed task with id %d", t.id)))
+// 	}
+// }
+
+// // what is current status of the task or what are results if the task is done
+// func (a *server) statusHandler(w http.ResponseWriter, r *http.Request) {
+// 	w.Write([]byte("status"))
+// }
