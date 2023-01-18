@@ -18,10 +18,10 @@ func NewTaskProvider(queueSize int) *TaskProvider {
 }
 
 func (p *TaskProvider) ScheduleTask(task *LoadTask) (uint64, error) {
-	id := atomic.AddUint64(&p.runningId, 1)
+	task.id = atomic.AddUint64(&p.runningId, 1)
 	select {
 	case p.tasks <- task:
-		return id, nil
+		return task.id, nil
 	case <- time.After(time.Second):
 		return 0, fmt.Errorf("queue is full")
 	}
