@@ -22,7 +22,7 @@ func (p *TaskProvider) ScheduleTask(task *LoadTask) (uint64, error) {
 	select {
 	case p.tasks <- task:
 		return task.id, nil
-	case <- time.After(time.Second):
+	case <- time.After(time.Millisecond * 10):
 		return 0, fmt.Errorf("queue is full")
 	}
 }
