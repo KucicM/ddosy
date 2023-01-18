@@ -26,7 +26,7 @@ func Start(cfg ServerConfig) error {
 	srv := NewServer(cfg)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/run", srv.scheduleHandler)
+	mux.HandleFunc("/run", srv.ScheduleHandler)
 	// mux.HandleFunc("/status", s.statusHandler)
 	// mux.HandleFunc("/kill", s.killHandler)
 
@@ -61,12 +61,10 @@ func (s *Server) runner() {
 		targeter := task.Targeter()
 		attacker := vegeta.NewAttacker()
 
+		log.Printf("Running task %+v", task)
 		for _, load := range task.load {
+			log.Println("tu?")
 			for _ = range attacker.Attack(targeter, load.pacer, load.duration, "attack") {
-				// if task.shouldStop() {
-				// 	attacker.Stop()
-				// 	break main
-				// }
 			}
 		}
 
@@ -75,7 +73,7 @@ func (s *Server) runner() {
 	}
 }
 
-func (s *Server) scheduleHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ScheduleHandler(w http.ResponseWriter, r *http.Request) {
 	var req ScheduleRequestWeb
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -93,8 +91,11 @@ func (s *Server) scheduleHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) scheduleTask(req ScheduleRequestWeb) ScheduleResponseWeb {
 	task := NewLoadTask(req)
-	id, err := s.taskProvider.ScheduleTask(task)
-	return ScheduleResponseWeb{Id: id, Error: err.Error()}
+	if id, err := s.taskProvider.ScheduleTask(task); err == nil {
+		return ScheduleResponseWeb{Id: id}
+	} else {
+		return ScheduleResponseWeb{Error: err.Error()}
+	}
 }
 
 // func Start(cfg ServerConfig) error {
