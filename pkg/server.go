@@ -1,16 +1,72 @@
 package ddosy
 
-// import (
-// 	"encoding/json"
-// 	"fmt"
-// 	"log"
-// 	"net/http"
-// 	"sync"
-// 	"sync/atomic"
-// 	"time"
+import (
+	// 	"encoding/json"
+	"encoding/json"
+	"fmt"
 
-// 	vegeta "github.com/tsenart/vegeta/v12/lib"
-// )
+	// 	"log"
+	"net/http"
+	// 	"sync"
+	// 	"sync/atomic"
+	// 	"time"
+	// 	vegeta "github.com/tsenart/vegeta/v12/lib"
+)
+
+
+type ServerConfig struct {
+	Port     int
+	MaxQueue int
+}
+
+func Start(cfg ServerConfig) error {
+	srv := NewServer(cfg)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/run", srv.scheduleHandler)
+	// mux.HandleFunc("/status", s.statusHandler)
+	// mux.HandleFunc("/kill", s.killHandler)
+
+	// server config
+	httpSrv := &http.Server{
+		Handler: mux,
+		Addr:    fmt.Sprintf(":%d", cfg.Port),
+	}
+
+	return httpSrv.ListenAndServe()
+}
+
+type Server struct {
+	taskProvider *TaskProvider
+}
+
+func NewServer(cfg ServerConfig) *Server {
+	return &Server{
+		taskProvider: NewTaskProvider(cfg.MaxQueue),
+	}
+}
+
+func (s *Server) scheduleHandler(w http.ResponseWriter, r *http.Request) {
+	var req ScheduleRequestWeb
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := ValidateScheduleRequestWeb(req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return 
+	}
+
+	resp := s.scheduleTask(req)
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (s *Server) scheduleTask(req ScheduleRequestWeb) ScheduleResponseWeb {
+	task := NewLoadTask(req)
+	id, err := s.taskProvider.ScheduleTask(task)
+	return ScheduleResponseWeb{Id: id, Error: err.Error()}
+}
 
 // func Start(cfg ServerConfig) error {
 // 	s := newServer(cfg)
@@ -30,10 +86,6 @@ package ddosy
 // }
 
 
-// type ServerConfig struct {
-// 	Port     int
-// 	MaxQueue int
-// }
 
 // type server struct {
 // 	runningId   int64

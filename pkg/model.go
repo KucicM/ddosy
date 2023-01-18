@@ -8,7 +8,7 @@ import (
 )
 
 type ScheduleResponseWeb struct {
-	Id    int64  `json:"id"`
+	Id    uint64  `json:"id"`
 	Error string `json:"error"`
 }
 
@@ -42,7 +42,7 @@ type SineLoadWeb struct {
 
 // internal
 type LoadTask struct {
-	id int64
+	id uint64
 	traffic TrafficPattern
 	load []LoadPattern
 }
@@ -64,14 +64,13 @@ type TrafficDistribution struct {
 	payloads [][]byte
 }
 
-func NewLoadTask(id int64, req ScheduleRequestWeb) *LoadTask {
+func NewLoadTask(req ScheduleRequestWeb) *LoadTask {
 	load := make([]LoadPattern, len(req.LoadPatterns))
 	for i, p := range req.LoadPatterns {
 		load[i] = NewLoadPattern(p)
 	}
 
 	return &LoadTask{
-		id: id,
 		traffic: NewTrafficPattern(req.Endpoint, req.TrafficPatterns),
 		load: load,
 	}
