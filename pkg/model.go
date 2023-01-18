@@ -2,6 +2,9 @@ package ddosy
 
 import (
 	"net/http"
+	"time"
+
+	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
 type ScheduleResponseWeb struct {
@@ -40,7 +43,38 @@ type SineLoadWeb struct {
 // internal
 type LoadTask struct {
 	id int64
+	traffic TrafficPattern
+	load []LoadPattern
+}
 
+type LoadPattern struct {
+	duration time.Duration
+	pacer vegeta.Pacer
+}
+
+type TrafficPattern struct {
+  endpoint string
+  header http.Header
+  method string
+  dist TrafficDistribution
+}
+
+type TrafficDistribution struct {
+	weigths []float64
+	payloads [][]byte
+}
+
+func NewLoadTask(id int64, req ScheduleRequestWeb) *LoadTask {
+	load := make([]LoadPattern, len(req.LoadPatterns))
+	for i, p := range req.LoadPatterns {
+		load[i] = NewLoadPattern(p)
+	}
+
+	return &LoadTask{
+		id: id,
+		traffic: NewTrafficPattern(req.Endpoint, req.TrafficPatterns),
+		load: load,
+	}
 }
 
 func NewTrafficPattern(endpoint string, patterns []TrafficPatternWeb) TrafficPattern {
@@ -68,81 +102,29 @@ func NewTrafficPattern(endpoint string, patterns []TrafficPatternWeb) TrafficPat
 	}
 }
 
-type TrafficPattern struct {
-  endpoint string
-  header http.Header
-  method string
-  dist TrafficDistribution
+func NewLoadPattern(pattern LoadPatternWeb) LoadPattern {
+	duration, _ := time.ParseDuration(pattern.Duration)
+	var pacer vegeta.Pacer
+
+	if pattern.Linear != nil {
+		l := pattern.Linear
+		slope := float64(l.EndRate-l.StartRate) / duration.Seconds()
+		pacer = vegeta.LinearPacer{
+			StartAt: vegeta.Rate{Freq: l.StartRate, Per: time.Second},
+			Slope:   slope,
+		}
+	} else {
+		s := pattern.Sine
+		p, _ := time.ParseDuration(s.Period)
+		pacer = vegeta.SinePacer{
+			Period: p,
+			Mean:   vegeta.Rate{Freq: s.Mean, Per: time.Second},
+			Amp:    vegeta.Rate{Freq: s.Amp, Per: time.Second},
+		}
+	}
+
+	return LoadPattern{
+		duration: duration,
+		pacer: pacer,
+	}
 }
-
-type TrafficDistribution struct {
-	weigths []float64
-	payloads [][]byte
-}
-
-// func (p LoadPattern) Pacer() (vegeta.Pacer, error) {
-// 	if p.Linear != nil {
-// 		d := p.duration()
-// 		return p.Linear.pacer(d), nil
-// 	} else if p.Sine != nil {
-// 		return p.Sine.pacer()
-// 	} else {
-// 		return nil, fmt.Errorf("load pattern must have linear or sine pattern define")
-// 	}
-// }
-
-// func (p LoadPattern) duration() time.Duration {
-// 	d, _ := time.ParseDuration(p.Duration)
-// 	return d
-// }
-
-
-// func (l *LinearLoad) pacer(d time.Duration) vegeta.Pacer {
-// 	slope := float64(l.EndRate-l.StartRate) / d.Seconds()
-// 	return vegeta.LinearPacer{
-// 		StartAt: vegeta.Rate{Freq: l.StartRate, Per: time.Second},
-// 		Slope:   slope,
-// 	}
-// }
-
-
-// func (s *SineLoad) pacer() (vegeta.Pacer, error) {
-// 	period, err := time.ParseDuration(s.Period)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if period.Seconds() <= 0 {
-// 		return nil, fmt.Errorf("period must be > 0")
-// 	}
-// 	if s.Mean <= 0 {
-// 		return nil, fmt.Errorf("mean must be > 0")
-// 	}
-// 	if s.Amp >= s.Mean {
-// 		return nil, fmt.Errorf("amplitude must be less then mean")
-// 	}
-// 	return vegeta.SinePacer{
-// 		Period: period,
-// 		Mean:   vegeta.Rate{Freq: s.Mean, Per: time.Second},
-// 		Amp:    vegeta.Rate{Freq: s.Amp, Per: time.Second},
-// 	}, nil
-
-// }
-
-// // type task struct {
-// // 	id   int64
-// // 	stop bool
-// // 	req LoadRequest
-// // 	stopLock *sync.RWMutex
-// // }
-
-// // func (t *task) shouldStop() bool {
-// // 	t.stopLock.RLock()
-// // 	defer t.stopLock.RUnlock()
-// // 	return t.stop
-// // }
-
-// // func (t *task) forceStop() {
-// // 	t.stopLock.Lock()
-// // 	t.stop = true
-// // 	t.stopLock.Unlock()
-// // }
