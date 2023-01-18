@@ -127,3 +127,7 @@ func NewLoadPattern(pattern LoadPatternWeb) LoadPattern {
 		pacer: pacer,
 	}
 }
+
+func (t *LoadTask) Targeter() vegeta.Targeter {
+	return NewWeightedTargeter(t.traffic)
+}

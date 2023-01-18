@@ -1,20 +1,21 @@
 package ddosy
 
-// import (
-// 	"math/rand"
-// 	"time"
+import (
+	"math/rand"
+	"time"
 
-// 	vegeta "github.com/tsenart/vegeta/v12/lib"
-// )
+	vegeta "github.com/tsenart/vegeta/v12/lib"
+)
 
-// func NewWeightedTargeter(patterns []TrafficPattern) vegeta.Targeter {
-// 	distribution := createDistribution(patterns)
-// 	rand.Seed(time.Now().UnixNano())
-// 	return func(t *vegeta.Target) error {
-// 		i := pickRandom(distribution)
-// 		pattern := patterns[i]
-// 		t.Body = []byte(pattern.Payload) // TODO 
-// 		t.URL = pattern // TODO
-// 		t.Header = pattern
-// 	}
-// }
+func NewWeightedTargeter(pattern TrafficPattern) vegeta.Targeter {
+	dist := pattern.dist
+	rand.Seed(time.Now().UnixNano())
+	return func(t *vegeta.Target) error {
+		i := RandomPick(dist.weigths)
+		t.Body = dist.payloads[i]
+		t.URL = pattern.endpoint
+		t.Method = pattern.method
+		t.Header = pattern.header
+		return nil
+	}
+}

@@ -26,3 +26,7 @@ func (p *TaskProvider) ScheduleTask(task *LoadTask) (uint64, error) {
 		return 0, fmt.Errorf("queue is full")
 	}
 }
+
+func (p *TaskProvider) GetQueue() <- chan *LoadTask {
+	return p.tasks
+}

@@ -4,9 +4,12 @@ import (
 	// 	"encoding/json"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	// 	"log"
 	"net/http"
+
+	vegeta "github.com/tsenart/vegeta/v12/lib"
 	// 	"sync"
 	// 	"sync/atomic"
 	// 	"time"
@@ -41,8 +44,34 @@ type Server struct {
 }
 
 func NewServer(cfg ServerConfig) *Server {
-	return &Server{
+	srv :=  &Server{
 		taskProvider: NewTaskProvider(cfg.MaxQueue),
+	}
+
+	go srv.runner()
+
+	return srv
+}
+
+func (s *Server) runner() {
+	log.Println("server runner started")
+	for task := range s.taskProvider.GetQueue() {
+		log.Printf("Running task id=%d", task.id)
+
+		targeter := task.Targeter()
+		attacker := vegeta.NewAttacker()
+
+		for _, load := range task.load {
+			for _ = range attacker.Attack(targeter, load.pacer, load.duration, "attack") {
+				// if task.shouldStop() {
+				// 	attacker.Stop()
+				// 	break main
+				// }
+			}
+		}
+
+		// TODO metrics
+
 	}
 }
 
