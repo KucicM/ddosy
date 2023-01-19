@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	// 	"log"
 	"net/http"
@@ -27,7 +28,7 @@ func Start(cfg ServerConfig) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/run", srv.ScheduleHandler)
 	// mux.HandleFunc("/status", s.statusHandler)
-	// mux.HandleFunc("/kill", s.killHandler)
+	mux.HandleFunc("/kill", srv.KillHandler)
 
 	// server config
 	httpSrv := &http.Server{
@@ -40,11 +41,13 @@ func Start(cfg ServerConfig) error {
 
 type Server struct {
 	taskProvider *TaskProvider
+	kill         chan struct{}
 }
 
 func NewServer(cfg ServerConfig) *Server {
 	srv := &Server{
 		taskProvider: NewTaskProvider(cfg.MaxQueue),
+		kill: make(chan struct{}, 1),
 	}
 
 	go srv.runner()
@@ -60,14 +63,19 @@ func (s *Server) runner() {
 		targeter := task.Targeter()
 		attacker := vegeta.NewAttacker()
 
+	main:
 		for _, load := range task.load {
 			for _ = range attacker.Attack(targeter, load.pacer, load.duration, "attack") {
-				
+				select {
+				case <-s.kill:
+					attacker.Stop()
+					log.Printf("load test with id=%d killed\n", task.id)
+					break main
+				default:
+					// todo record metrics
+				}
 			}
 		}
-
-		// TODO metrics
-
 	}
 }
 
@@ -93,6 +101,17 @@ func (s *Server) scheduleTask(req ScheduleRequestWeb) ScheduleResponseWeb {
 		return ScheduleResponseWeb{Id: id}
 	} else {
 		return ScheduleResponseWeb{Error: err.Error()}
+	}
+}
+
+func (s *Server) KillHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("recived kill request")
+	select {
+	case s.kill <- struct{}{}:
+		log.Println("kill signal sent")
+		w.Write([]byte("Stopping"))
+	case <-time.After(time.Second):
+		w.Write([]byte("No running tasks?"))
 	}
 }
 
