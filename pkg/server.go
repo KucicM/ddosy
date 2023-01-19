@@ -16,7 +16,6 @@ import (
 	// 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
-
 type ServerConfig struct {
 	Port     int
 	MaxQueue int
@@ -44,7 +43,7 @@ type Server struct {
 }
 
 func NewServer(cfg ServerConfig) *Server {
-	srv :=  &Server{
+	srv := &Server{
 		taskProvider: NewTaskProvider(cfg.MaxQueue),
 	}
 
@@ -56,15 +55,14 @@ func NewServer(cfg ServerConfig) *Server {
 func (s *Server) runner() {
 	log.Println("server runner started")
 	for task := range s.taskProvider.GetQueue() {
-		log.Printf("Running task id=%d", task.id)
+		log.Printf("Running task %+v", task)
 
 		targeter := task.Targeter()
 		attacker := vegeta.NewAttacker()
 
-		log.Printf("Running task %+v", task)
 		for _, load := range task.load {
-			log.Println("tu?")
 			for _ = range attacker.Attack(targeter, load.pacer, load.duration, "attack") {
+				
 			}
 		}
 
@@ -82,7 +80,7 @@ func (s *Server) ScheduleHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := ValidateScheduleRequestWeb(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return 
+		return
 	}
 
 	resp := s.scheduleTask(req)
@@ -114,8 +112,6 @@ func (s *Server) scheduleTask(req ScheduleRequestWeb) ScheduleResponseWeb {
 
 // 	return srv.ListenAndServe()
 // }
-
-
 
 // type server struct {
 // 	runningId   int64
@@ -175,7 +171,7 @@ func (s *Server) scheduleTask(req ScheduleRequestWeb) ScheduleResponseWeb {
 
 // 	if err := ValidateLoadRequest(req); err != nil {
 // 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return 
+// 		return
 // 	}
 
 // 	resp := a.addToQ(req)

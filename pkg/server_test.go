@@ -7,32 +7,42 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	ddosy "github.com/kucicm/ddosy/pkg"
 )
 
 
 func TestRunLoadTest(t *testing.T) {
-	cfg := ddosy.ServerConfig{Port: 434343, MaxQueue: 5}
-	srv := ddosy.NewServer(cfg)
+	var callCount int32
+	done := make(chan struct{})
+	testSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if atomic.AddInt32(&callCount, 1) >= 5 {
+			done<-struct{}{}
+		}
+    }))
+    defer testSrv.Close()
 
 	sr := ddosy.ScheduleRequestWeb{
-		Endpoint: "localdost:777777/test",
+		Endpoint: testSrv.URL,
 		TrafficPatterns: []ddosy.TrafficPatternWeb{{Weight: 1, Payload: "test"}},
 		LoadPatterns: []ddosy.LoadPatternWeb{{
 			Duration: "1s", 
-			Linear: &ddosy.LinearLoadWeb{StartRate: 1, EndRate: 1},
+			Linear: &ddosy.LinearLoadWeb{StartRate: 50, EndRate: 50},
 		}},
 	}
 
     var buf bytes.Buffer
     json.NewEncoder(&buf).Encode(sr)
-
 	req := httptest.NewRequest(http.MethodPost, "/run", &buf)
     w := httptest.NewRecorder()
 
+	cfg := ddosy.ServerConfig{Port: 434343, MaxQueue: 5}
+	srv := ddosy.NewServer(cfg)
 	srv.ScheduleHandler(w, req)
+
 
 	res := w.Result()
     defer res.Body.Close()
@@ -50,4 +60,10 @@ func TestRunLoadTest(t *testing.T) {
     if !reflect.DeepEqual(expected, actual) {
         t.Errorf("expected %v got %v", expected, actual)
     }
+
+	select {
+	case <-done:
+	case <- time.After(time.Second):
+		t.Error("load test did not start")
+	}
 }
