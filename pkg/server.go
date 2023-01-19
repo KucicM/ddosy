@@ -7,14 +7,9 @@ import (
 	"log"
 	"time"
 
-	// 	"log"
 	"net/http"
 
 	vegeta "github.com/tsenart/vegeta/v12/lib"
-	// 	"sync"
-	// 	"sync/atomic"
-	// 	"time"
-	// 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
 type ServerConfig struct {
@@ -40,14 +35,16 @@ func Start(cfg ServerConfig) error {
 }
 
 type Server struct {
-	taskProvider *TaskProvider
-	kill         chan struct{}
+	taskProvider   *TaskProvider
+	resultProvider *ResultProvider
+	kill           chan struct{}
 }
 
 func NewServer(cfg ServerConfig) *Server {
 	srv := &Server{
-		taskProvider: NewTaskProvider(cfg.MaxQueue),
-		kill: make(chan struct{}, 1),
+		taskProvider:   NewTaskProvider(cfg.MaxQueue),
+		resultProvider: NewRelustProvider(),
+		kill:           make(chan struct{}, 1),
 	}
 
 	go srv.runner()
@@ -65,17 +62,20 @@ func (s *Server) runner() {
 
 	main:
 		for _, load := range task.load {
-			for _ = range attacker.Attack(targeter, load.pacer, load.duration, "attack") {
+			s.resultProvider.NewPattern(task.id)
+
+			for res := range attacker.Attack(targeter, load.pacer, load.duration, "attack") {
 				select {
 				case <-s.kill:
 					attacker.Stop()
 					log.Printf("load test with id=%d killed\n", task.id)
 					break main
 				default:
-					// todo record metrics
+					s.resultProvider.Update(task.id, res)
 				}
 			}
 		}
+		s.resultProvider.Done(task.id)
 	}
 }
 
