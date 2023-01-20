@@ -4,7 +4,7 @@ import (
 	"flag"
 	"log"
 
-	ddosy "github.com/kucicm/ddosy/pkg"
+	ddosy "github.com/kucicm/ddosy/app"
 )
 
 func main() {
