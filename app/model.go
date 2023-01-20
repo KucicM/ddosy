@@ -8,18 +8,18 @@ import (
 )
 
 type ScheduleResponseWeb struct {
-	Id    uint64  `json:"id"`
+	Id    uint64 `json:"id"`
 	Error string `json:"error"`
 }
 
 type ScheduleRequestWeb struct {
-	Endpoint        string           `json:"endpoint"`
+	Endpoint        string              `json:"endpoint"`
 	LoadPatterns    []LoadPatternWeb    `json:"load"`
 	TrafficPatterns []TrafficPatternWeb `json:"traffic"`
 }
 
 type LoadPatternWeb struct {
-	Duration string      `json:"duration"`
+	Duration string         `json:"duration"`
 	Linear   *LinearLoadWeb `json:"linear"`
 	Sine     *SineLoadWeb   `json:"sine"`
 }
@@ -42,25 +42,26 @@ type SineLoadWeb struct {
 
 // internal
 type LoadTask struct {
-	id uint64
+	id      uint64
 	traffic TrafficPattern
-	load []LoadPattern
+	load    []LoadPattern
+	req     ScheduleRequestWeb
 }
 
 type LoadPattern struct {
 	duration time.Duration
-	pacer vegeta.Pacer
+	pacer    vegeta.Pacer
 }
 
 type TrafficPattern struct {
-  endpoint string
-  header http.Header
-  method string
-  dist TrafficDistribution
+	endpoint string
+	header   http.Header
+	method   string
+	dist     TrafficDistribution
 }
 
 type TrafficDistribution struct {
-	weigths []float64
+	weigths  []float64
 	payloads [][]byte
 }
 
@@ -72,7 +73,7 @@ func NewLoadTask(req ScheduleRequestWeb) *LoadTask {
 
 	return &LoadTask{
 		traffic: NewTrafficPattern(req.Endpoint, req.TrafficPatterns),
-		load: load,
+		load:    load,
 	}
 }
 
@@ -86,18 +87,17 @@ func NewTrafficPattern(endpoint string, patterns []TrafficPatternWeb) TrafficPat
 	}
 
 	dist := TrafficDistribution{
-		weigths: CreateDistribution(ws),
+		weigths:  CreateDistribution(ws),
 		payloads: payloads,
 	}
-
 
 	header := http.Header{}
 	header.Add("Content-Type", "application/json")
 	return TrafficPattern{
 		endpoint: endpoint,
-		header: header,
-		method: http.MethodPost,
-		dist: dist,
+		header:   header,
+		method:   http.MethodPost,
+		dist:     dist,
 	}
 }
 
@@ -124,7 +124,7 @@ func NewLoadPattern(pattern LoadPatternWeb) LoadPattern {
 
 	return LoadPattern{
 		duration: duration,
-		pacer: pacer,
+		pacer:    pacer,
 	}
 }
 
