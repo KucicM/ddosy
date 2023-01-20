@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	ddosy "github.com/kucicm/ddosy/pkg"
+	ddosy "github.com/kucicm/ddosy/app"
 )
 
 func TestRunLoadTest(t *testing.T) {

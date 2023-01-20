@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	ddosy "github.com/kucicm/ddosy/pkg"
+	ddosy "github.com/kucicm/ddosy/app"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 

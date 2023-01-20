@@ -3,7 +3,7 @@ package ddosy_test
 import (
 	"testing"
 
-	ddosy "github.com/kucicm/ddosy/pkg"
+	ddosy "github.com/kucicm/ddosy/app"
 )
 
 
