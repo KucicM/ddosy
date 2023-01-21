@@ -13,8 +13,9 @@ import (
 )
 
 type ServerConfig struct {
-	Port     int
-	MaxQueue int
+	Port              int
+	DbUrl             string
+	TruncateDbOnStart bool
 }
 
 func Start(cfg ServerConfig) error {
@@ -41,8 +42,12 @@ type Server struct {
 }
 
 func NewServer(cfg ServerConfig) *Server {
+	repo := NewTaskRepository(cfg.DbUrl, cfg.TruncateDbOnStart) // todo close connection on shutdown
+
+	// todo shutdown
+
 	srv := &Server{
-		taskProvider:   NewTaskProvider(cfg.MaxQueue),
+		taskProvider:   NewTaskProvider(repo),
 		resultProvider: NewRelustProvider(),
 		kill:           make(chan struct{}, 1),
 	}
@@ -54,9 +59,14 @@ func NewServer(cfg ServerConfig) *Server {
 
 func (s *Server) runner() {
 	log.Println("server runner started")
-	for task := range s.taskProvider.GetQueue() {
-		log.Printf("Running task %+v", task)
+	for {
+		task := s.taskProvider.Next()
+		if task == nil {
+			time.Sleep(time.Second)
+			continue
+		}
 
+		log.Printf("Running task %+v", task)
 		targeter := task.Targeter()
 		attacker := vegeta.NewAttacker()
 
@@ -91,16 +101,10 @@ func (s *Server) ScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := s.scheduleTask(req)
-	json.NewEncoder(w).Encode(resp)
-}
-
-func (s *Server) scheduleTask(req ScheduleRequestWeb) ScheduleResponseWeb {
-	task := NewLoadTask(req)
-	if id, err := s.taskProvider.ScheduleTask(task); err == nil {
-		return ScheduleResponseWeb{Id: id}
+	if id, err := s.taskProvider.ScheduleTask(req); err == nil {
+		json.NewEncoder(w).Encode(ScheduleResponseWeb{Id: id})
 	} else {
-		return ScheduleResponseWeb{Error: err.Error()}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 

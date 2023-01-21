@@ -38,7 +38,7 @@ func TestRunLoadTest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/run", &buf)
 	w := httptest.NewRecorder()
 
-	cfg := ddosy.ServerConfig{Port: 434343, MaxQueue: 5}
+	cfg := ddosy.ServerConfig{Port: 434343, DbUrl: "test.db", TruncateDbOnStart: true}
 	srv := ddosy.NewServer(cfg)
 	srv.ScheduleHandler(w, req)
 
@@ -61,7 +61,7 @@ func TestRunLoadTest(t *testing.T) {
 
 	select {
 	case <-done:
-	case <-time.After(time.Second):
+	case <-time.After(time.Second * 2):
 		t.Error("load test did not start")
 	}
 }
@@ -96,7 +96,7 @@ func TestKillRunningLoadTest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/run", &buf)
 	w := httptest.NewRecorder()
 
-	cfg := ddosy.ServerConfig{Port: 434343, MaxQueue: 5}
+	cfg := ddosy.ServerConfig{Port: 434343, DbUrl: "test.db", TruncateDbOnStart: true}
 	srv := ddosy.NewServer(cfg)
 	srv.ScheduleHandler(w, req)
 

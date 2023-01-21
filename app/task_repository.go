@@ -9,13 +9,23 @@ import (
 )
 
 type TaskRepository struct {
-	db *sql.DB
+	url string
 }
 
-func NewTaskRepository(dbURL string) *TaskRepository {
+func NewTaskRepository(dbURL string, truncate bool) *TaskRepository {
+	log.Printf("creating db: %s\n", dbURL)
 	db, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
 		log.Fatalln(err)
+	}
+	defer db.Close()
+
+	if truncate {
+		log.Println("cleaning table")
+		_, err = db.Exec("DROP TABLE IF EXISTS Tasks")
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 
 	createTable := `
@@ -39,7 +49,8 @@ func NewTaskRepository(dbURL string) *TaskRepository {
 	// TODO index on status, id and doneAt
 
 	rep := &TaskRepository{
-		db: db,
+		url: dbURL,
+		// db: db,
 	}
 
 	// todo backgroud worker to clean database
@@ -55,6 +66,11 @@ func (r *TaskRepository) Save(req ScheduleRequestWeb) (uint64, error) {
 		RETURNING Id;
     `
 
+	db, err := sql.Open("sqlite3", r.url)
+	if err != nil {
+		return 0, err
+	}
+
 	bs, err := json.Marshal(req)
 	if err != nil {
 		log.Printf("error marshaling req %v %s\n", req, err)
@@ -62,7 +78,7 @@ func (r *TaskRepository) Save(req ScheduleRequestWeb) (uint64, error) {
 	}
 
 	var id uint64
-	if err = r.db.QueryRow(query, Scheduled, string(bs)).Scan(&id); err != nil {
+	if err = db.QueryRow(query, Scheduled, string(bs)).Scan(&id); err != nil {
 		log.Printf("error saving to db %s\n", err)
 		return 0, err
 	}
@@ -80,8 +96,14 @@ func (r *TaskRepository) Get(id uint64) (DatabaseTask, error) {
 	WHERE Id = ?;`
 
 	var t DatabaseTask
+
+	db, err := sql.Open("sqlite3", r.url)
+	if err != nil {
+		return t, err
+	}
+
 	var buf []byte
-	err := r.db.QueryRow(query, id).Scan(
+	err = db.QueryRow(query, id).Scan(
 		&t.Id,
 		&t.StatusId,
 		&t.CreatedAt,
@@ -131,7 +153,12 @@ func (r *TaskRepository) UpdateStatus(id uint64, newStatus TaskStatus) error {
 		return nil
 	}
 
-	_, err := r.db.Exec(query, id)
+	db, err := sql.Open("sqlite3", r.url)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(query, id)
 	if err != nil {
 		log.Printf("error on update id=%d %s\n", id, err)
 		return err
@@ -141,7 +168,13 @@ func (r *TaskRepository) UpdateStatus(id uint64, newStatus TaskStatus) error {
 
 func (r *TaskRepository) UpdateProgress(id uint64, progress string) error {
 	query := "UPDATE Tasks SET Results = Tasks.Results || '\n' || ? WHERE Id = ?;"
-	_, err := r.db.Exec(query, progress, id)
+
+	db, err := sql.Open("sqlite3", r.url)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(query, progress, id)
 	if err != nil {
 		log.Printf("error on update id=%d %s\n", id, err)
 		return err
@@ -161,16 +194,23 @@ func (r *TaskRepository) GetNext() (uint64, ScheduleRequestWeb, error) {
 	ORDER BY Id
 	LIMIT 1`
 
-	var id uint64
 	var req ScheduleRequestWeb
+
+	db, err := sql.Open("sqlite3", r.url)
+	if err != nil {
+		return 0, req, err
+	}
+
+	var id uint64
 	var buf []byte
-	err := r.db.QueryRow(query).Scan(&id, &buf)
+	err = db.QueryRow(query).Scan(&id, &buf)
 
 	if err == sql.ErrNoRows {
 		return 0, req, nil
 	}
 
 	if err != nil {
+		log.Printf("error fetching from db %s\n", err)
 		return 0, req, err
 	}
 

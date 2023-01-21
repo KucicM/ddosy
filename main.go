@@ -9,16 +9,15 @@ import (
 
 func main() {
 	port := flag.Int("port", 4000, "port for the server")
-	queue := flag.Int("queue", 1, "max queue size")
+	// queue := flag.Int("queue", 1, "max queue size")
+	dbUrl := flag.String("dbUrl", "test.db", "connetion to database")
 	flag.Parse()
 
 	cfg := ddosy.ServerConfig{
-		Port:     *port,
-		MaxQueue: *queue,
+		Port:              *port,
+		DbUrl:             *dbUrl,
+		TruncateDbOnStart: false,
 	}
 
-	// app := ddosy.NewServer(cfg)
 	log.Fatalln(ddosy.Start(cfg))
-	// log.Fatalln(app.ListenAndServe())
-
 }

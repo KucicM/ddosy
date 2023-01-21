@@ -9,7 +9,7 @@ import (
 )
 
 func TestSave(t *testing.T) {
-	rep := ddosy.NewTaskRepository(":memory:")
+	rep := ddosy.NewTaskRepository("test.db", true)
 
 	req := ddosy.ScheduleRequestWeb{
 		Endpoint:        "test-url",
@@ -32,7 +32,7 @@ func TestSave(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	rep := ddosy.NewTaskRepository(":memory:")
+	rep := ddosy.NewTaskRepository("test.db", true)
 
 	req := ddosy.ScheduleRequestWeb{
 		Endpoint:        "test-url",
@@ -79,7 +79,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestStatusUpdateFlow(t *testing.T) {
-	rep := ddosy.NewTaskRepository(":memory:")
+	rep := ddosy.NewTaskRepository("test.db", true)
 
 	req := ddosy.ScheduleRequestWeb{
 		Endpoint:        "test-url",
@@ -169,7 +169,7 @@ func TestStatusUpdateFlow(t *testing.T) {
 }
 
 func TestRunningToKilledStatusUpdate(t *testing.T) {
-	rep := ddosy.NewTaskRepository(":memory:")
+	rep := ddosy.NewTaskRepository("test.db", true)
 	id, _ := rep.Save(ddosy.ScheduleRequestWeb{})
 	rep.UpdateStatus(id, ddosy.Running)
 	running, _ := rep.Get(id)
@@ -220,7 +220,7 @@ func TestRunningToKilledStatusUpdate(t *testing.T) {
 }
 
 func TestUpdateProgress(t *testing.T) {
-	rep := ddosy.NewTaskRepository(":memory:")
+	rep := ddosy.NewTaskRepository("test.db", true)
 	id, _ := rep.Save(ddosy.ScheduleRequestWeb{})
 
 	// 1
@@ -253,7 +253,7 @@ func TestUpdateProgress(t *testing.T) {
 }
 
 func TestNoTaskGetNext(t *testing.T) {
-	rep := ddosy.NewTaskRepository(":memory:")
+	rep := ddosy.NewTaskRepository("test.db", true)
 	id, _, err := rep.GetNext()
 	if err != nil {
 		t.Errorf("unexpected error %s\n", err)
@@ -265,7 +265,7 @@ func TestNoTaskGetNext(t *testing.T) {
 }
 
 func TestGetNextTask(t *testing.T) {
-	rep := ddosy.NewTaskRepository(":memory:")
+	rep := ddosy.NewTaskRepository("test.db", true)
 
 	killedId, _ := rep.Save(ddosy.ScheduleRequestWeb{Endpoint: "1"})
 	rep.UpdateStatus(killedId, ddosy.Killed)
