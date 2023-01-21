@@ -55,7 +55,6 @@ func NewTaskRepository(dbURL string, truncate bool) *TaskRepository {
 
 	// todo backgroud worker to clean database
 
-	// create database
 	return rep
 }
 
