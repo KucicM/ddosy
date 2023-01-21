@@ -1,32 +1,37 @@
 package ddosy
 
 import (
-	"fmt"
-	"sync/atomic"
+	"log"
 	"time"
 )
 
 type TaskProvider struct {
-	runningId uint64
-	tasks chan *LoadTask
+	repo *TaskRepository
 }
 
-func NewTaskProvider(queueSize int) *TaskProvider {
+func NewTaskProvider(repostiroy *TaskRepository) *TaskProvider {
 	return &TaskProvider{
-		tasks: make(chan *LoadTask, queueSize),
+		repo: repostiroy,
 	}
 }
 
-func (p *TaskProvider) ScheduleTask(task *LoadTask) (uint64, error) {
-	task.id = atomic.AddUint64(&p.runningId, 1)
-	select {
-	case p.tasks <- task:
-		return task.id, nil
-	case <- time.After(time.Millisecond * 10):
-		return 0, fmt.Errorf("queue is full")
-	}
+func (p *TaskProvider) ScheduleTask(req ScheduleRequestWeb) (uint64, error) {
+	return p.repo.Save(req)
 }
 
-func (p *TaskProvider) GetQueue() <- chan *LoadTask {
-	return p.tasks
+func (p *TaskProvider) Next() *LoadTask {
+	id, req, err := p.repo.GetNext()
+	if err != nil {
+		log.Printf("error getting new task from db %s\n", err)
+		return nil
+	}
+
+	if id == 0 { // no new tasks
+		time.Sleep(time.Second)
+		return nil
+	}
+
+	task := NewLoadTask(req)
+	task.id = id
+	return task
 }
