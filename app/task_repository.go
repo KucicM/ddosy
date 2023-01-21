@@ -148,37 +148,3 @@ func (r *TaskRepository) UpdateProgress(id uint64, progress string) error {
 	}
 	return nil
 }
-
-// func (r *Repository) deleteWorker() {
-
-// }
-
-// func (r *Repository) InsertNew(task LoadTask) (uint64, error) {
-// 	req, err := json.Marshal(task.req)
-// 	if err != nil {
-// 		log.Printf("error converting task to json %s\n", err)
-// 		return 0, err
-// 	}
-
-// 	stmt, err := r.db.Prepare(
-// 		`INSERT INTO TaskStatus (Request)
-// 		VALUES (?)
-// 		RETURNING Id;`)
-
-// 	if err != nil {
-// 		log.Printf("error creating prepared statment %s\n", err)
-// 		return 0, err
-// 	}
-
-// 	var out uint64
-// 	err = stmt.QueryRow(req).Scan(&out)
-// 	if err != nil {
-// 		log.Fatalf("error %s\n", err)
-// 	}
-
-// 	return out, nil
-// }
-
-// func (r *Repository) Close() {
-// 	r.db.Close()
-// }

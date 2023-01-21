@@ -8,14 +8,6 @@ import (
 	ddosy "github.com/kucicm/ddosy/app"
 )
 
-func TestRepositoryBasic(t *testing.T) {
-	// rep := ddosy.NewTaskRepository(":memory:")
-	// log.Println(rep.InsertNew(ddosy.LoadTask{}))
-	// log.Println(rep.InsertNew(ddosy.LoadTask{}))
-	// log.Println(rep.InsertNew(ddosy.LoadTask{}))
-	// rep.Close()
-}
-
 func TestSave(t *testing.T) {
 	rep := ddosy.NewTaskRepository(":memory:")
 
