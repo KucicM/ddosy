@@ -40,12 +40,31 @@ type SineLoadWeb struct {
 	Period string `json:"period"`
 }
 
+// database
+type DatabaseTask struct {
+	Id        uint64
+	StatusId  TaskStatus
+	CreatedAt time.Time
+	StartedAt *time.Time
+	DoneAt    *time.Time
+	Request   ScheduleRequestWeb
+	Results   string
+}
+
+type TaskStatus int8
+
+const (
+	Scheduled TaskStatus = iota + 1
+	Running
+	Killed
+	Done
+)
+
 // internal
 type LoadTask struct {
 	id      uint64
 	traffic TrafficPattern
 	load    []LoadPattern
-	req     ScheduleRequestWeb
 }
 
 type LoadPattern struct {
