@@ -148,3 +148,35 @@ func (r *TaskRepository) UpdateProgress(id uint64, progress string) error {
 	}
 	return nil
 }
+
+// returns task id, task original request and error
+// if no tasks are found id will be 0 and error = nil
+// in case of errors, id = 0 and error != nil
+// this will NOT update the status, why? IDK sql
+func (r *TaskRepository) GetNext() (uint64, ScheduleRequestWeb, error) {
+	query := `
+	SELECT Id, Request 
+	FROM Tasks
+	WHERE StatusId = 1 -- scheduled
+	ORDER BY Id
+	LIMIT 1`
+
+	var id uint64
+	var req ScheduleRequestWeb
+	var buf []byte
+	err := r.db.QueryRow(query).Scan(&id, &buf)
+
+	if err == sql.ErrNoRows {
+		return 0, req, nil
+	}
+
+	if err != nil {
+		return 0, req, err
+	}
+
+	if err := json.Unmarshal(buf, &req); err != nil {
+		return 0, req, err
+	}
+
+	return id, req, nil
+}

@@ -251,3 +251,57 @@ func TestUpdateProgress(t *testing.T) {
 		t.Errorf("unexpected relusts %s\n", o1.Results)
 	}
 }
+
+func TestNoTaskGetNext(t *testing.T) {
+	rep := ddosy.NewTaskRepository(":memory:")
+	id, _, err := rep.GetNext()
+	if err != nil {
+		t.Errorf("unexpected error %s\n", err)
+	}
+
+	if id != 0 {
+		t.Errorf("got id = %d expcted 0\n", id)
+	}
+}
+
+func TestGetNextTask(t *testing.T) {
+	rep := ddosy.NewTaskRepository(":memory:")
+
+	killedId, _ := rep.Save(ddosy.ScheduleRequestWeb{Endpoint: "1"})
+	rep.UpdateStatus(killedId, ddosy.Killed)
+
+	doneId, _ := rep.Save(ddosy.ScheduleRequestWeb{Endpoint: "2"})
+	rep.UpdateStatus(doneId, ddosy.Running)
+	rep.UpdateStatus(doneId, ddosy.Done)
+
+	// check if no value is returned
+	id, _, err := rep.GetNext()
+	if err != nil {
+		t.Errorf("unexpected error %s\n", err)
+	}
+
+	if id != 0 {
+		t.Errorf("got id = %d expcted 0\n", id)
+	}
+
+	scheduled1, _ := rep.Save(ddosy.ScheduleRequestWeb{Endpoint: "3"})
+	scheduled2, _ := rep.Save(ddosy.ScheduleRequestWeb{Endpoint: "4"})
+
+	if scheduled1 == scheduled2 {
+		t.Error("why are two ids equal?")
+	}
+
+	id, req, err := rep.GetNext()
+	if err != nil {
+		t.Errorf("unexpected error %s\n", err)
+	}
+
+	if id != scheduled1 {
+		t.Errorf("expected id=%d got %d\n", scheduled1, id)
+	}
+
+	if req.Endpoint != "3" {
+		t.Errorf("did not get right request %v", req)
+	}
+
+}
