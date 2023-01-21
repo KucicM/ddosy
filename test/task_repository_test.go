@@ -226,3 +226,36 @@ func TestRunningToKilledStatusUpdate(t *testing.T) {
 		t.Errorf("expected no change %+v != %+v\n", killed, done)
 	}
 }
+
+func TestUpdateProgress(t *testing.T) {
+	rep := ddosy.NewTaskRepository(":memory:")
+	id, _ := rep.Save(ddosy.ScheduleRequestWeb{})
+
+	// 1
+	if err := rep.UpdateProgress(id, "test"); err != nil {
+		t.Errorf("unexpected error %s\n", err)
+	}
+
+	o1, err := rep.Get(id)
+	if err != nil {
+		t.Errorf("unexpected error %s\n", err)
+	}
+
+	if o1.Results != "\ntest" {
+		t.Errorf("unexpected relusts %s\n", o1.Results)
+	}
+
+	// 2
+	if err := rep.UpdateProgress(id, "test2"); err != nil {
+		t.Errorf("unexpected error %s\n", err)
+	}
+
+	o1, err = rep.Get(id)
+	if err != nil {
+		t.Errorf("unexpected error %s\n", err)
+	}
+
+	if o1.Results != "\ntest\ntest2" {
+		t.Errorf("unexpected relusts %s\n", o1.Results)
+	}
+}

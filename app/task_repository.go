@@ -110,32 +110,23 @@ func (r *TaskRepository) UpdateStatus(id uint64, newStatus TaskStatus) error {
 	var query string
 	switch newStatus {
 	case Running:
-		log.Println("update to running")
 		// update only if current status is Scheduled(1)
-		query = `
-		UPDATE Tasks
+		query = `UPDATE Tasks
 		SET StatusId = (CASE WHEN StatusId = 1 THEN 2 ELSE StatusId END),
 		StartedAt = (CASE WHEN StatusId = 1 THEN CURRENT_TIMESTAMP ELSE StartedAt END)
-		WHERE Id = ?;
-		`
+		WHERE Id = ?;`
 	case Killed:
-		log.Println("update to killed")
 		// update only if current status is Scheduled(1) OR Running(2)
-		query = `
-		UPDATE Tasks
+		query = `UPDATE Tasks
 		SET StatusId = (CASE WHEN StatusId IN (1, 2) THEN 3 ELSE StatusId END),
 		KilledAt = (CASE WHEN StatusId IN (1, 2) THEN CURRENT_TIMESTAMP ELSE KilledAt END)
-		WHERE Id = ?
-		`
+		WHERE Id = ?;`
 	case Done:
-		log.Println("update to done")
 		// update only if current status is Running(2)
-		query = `
-		UPDATE Tasks
+		query = `UPDATE Tasks
 		SET StatusId = (CASE WHEN StatusId = 2 THEN 4 ELSE StatusId END),
 		DoneAt = (CASE WHEN StatusId = 2 THEN CURRENT_TIMESTAMP ELSE DoneAt END)
-		WHERE Id = ?;
-		`
+		WHERE Id = ?;`
 	default:
 		return nil
 	}
@@ -148,9 +139,15 @@ func (r *TaskRepository) UpdateStatus(id uint64, newStatus TaskStatus) error {
 	return nil
 }
 
-// func (r *Repository) UpdateStats(id uint64, progress []byte) error {
-// 	return nil
-// }
+func (r *TaskRepository) UpdateProgress(id uint64, progress string) error {
+	query := "UPDATE Tasks SET Results = Tasks.Results || '\n' || ? WHERE Id = ?;"
+	_, err := r.db.Exec(query, progress, id)
+	if err != nil {
+		log.Printf("error on update id=%d %s\n", id, err)
+		return err
+	}
+	return nil
+}
 
 // func (r *Repository) deleteWorker() {
 
