@@ -105,8 +105,9 @@ func (r *TaskRepository) Get(id uint64) (DatabaseTask, error) {
 }
 
 func (r *TaskRepository) UpdateStatus(id uint64, newStatus TaskStatus) error {
-	var query string
+	log.Printf("update status of id=%d to newStatusId=%d\n", id, newStatus)
 
+	var query string
 	switch newStatus {
 	case Running:
 		log.Println("update to running")
