@@ -33,3 +33,14 @@ func TestGetTaskAfterScheduled(t *testing.T) {
 		t.Error("got no task")
 	}
 }
+
+func TestKill(t *testing.T) {
+	repo := ddosy.NewTaskRepository("test.db", true)
+	provider := ddosy.NewTaskProvider(repo)
+	id, _ := provider.ScheduleTask(ddosy.ScheduleRequestWeb{})
+	provider.Kill(id)
+	task, _ := repo.Get(id)
+	if task.StatusId != ddosy.Killed {
+		t.Errorf("expecting killed status got %d", task.StatusId)
+	}
+}

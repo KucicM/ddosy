@@ -23,7 +23,7 @@ type RunningResult struct {
 func NewRelustProvider() *ResultProvider {
 	p := &ResultProvider{
 		metrics: make(map[uint64]*RunningResult),
-		lock: &sync.RWMutex{},
+		lock:    &sync.RWMutex{},
 	}
 	// todo persister
 	return p
@@ -64,6 +64,10 @@ func (p *ResultProvider) Done(id uint64) {
 }
 
 func metricsToStr(m *vegeta.Metrics) string {
+	if m == nil {
+		return ""
+	}
+
 	buf := bytes.Buffer{}
 	m.Close()
 	rep := vegeta.NewTextReporter(m)

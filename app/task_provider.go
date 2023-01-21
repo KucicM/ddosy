@@ -35,3 +35,9 @@ func (p *TaskProvider) Next() *LoadTask {
 	task.id = id
 	return task
 }
+
+func (p *TaskProvider) Kill(id uint64) {
+	if err := p.repo.UpdateStatus(id, Killed); err != nil {
+		log.Panicf("falide to update db status on kill event %s\n", err)
+	}
+}

@@ -79,6 +79,7 @@ func (s *Server) runner() {
 				case <-s.kill:
 					attacker.Stop()
 					log.Printf("load test with id=%d killed\n", task.id)
+					s.taskProvider.Kill(task.id)
 					break main
 				default:
 					s.resultProvider.Update(task.id, res)

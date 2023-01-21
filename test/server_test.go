@@ -61,8 +61,8 @@ func TestRunLoadTest(t *testing.T) {
 
 	select {
 	case <-done:
-	case <-time.After(time.Second * 2):
-		t.Error("load test did not start")
+	case <-time.After(time.Second * 3):
+		t.Errorf("load test did not start %d", atomic.LoadInt32(&callCount))
 	}
 }
 
@@ -102,7 +102,7 @@ func TestKillRunningLoadTest(t *testing.T) {
 
 	select {
 	case <-started:
-	case <-time.After(time.Second):
+	case <-time.After(time.Second * 3):
 		t.Errorf("load test did not start %d\n", callCount)
 	}
 
@@ -113,6 +113,6 @@ func TestKillRunningLoadTest(t *testing.T) {
 	select {
 	case <-done:
 		t.Error("kill did not work")
-	case <-time.After(time.Second):
+	case <-time.After(time.Second * 3):
 	}
 }

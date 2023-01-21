@@ -55,7 +55,8 @@ type DatabaseTask struct {
 type TaskStatus int8
 
 const (
-	Scheduled TaskStatus = iota + 1
+	Unknown TaskStatus = iota
+	Scheduled
 	Running
 	Killed
 	Done
