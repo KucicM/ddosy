@@ -46,6 +46,7 @@ type DatabaseTask struct {
 	StatusId  TaskStatus
 	CreatedAt time.Time
 	StartedAt *time.Time
+	KilledAt  *time.Time
 	DoneAt    *time.Time
 	Request   ScheduleRequestWeb
 	Results   string

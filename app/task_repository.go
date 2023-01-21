@@ -24,6 +24,7 @@ func NewTaskRepository(dbURL string) *TaskRepository {
 		StatusId INTEGER NOT NULL,
 		CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		StartedAt DATETIME NULL,
+		KilledAt DATETIME NULL,
 		DoneAt DATETIME NULL,
 		Request BLOB NOT NULL,
 		Results TEXT DEFAULT ""
@@ -73,7 +74,7 @@ func (r *TaskRepository) Get(id uint64) (DatabaseTask, error) {
 	query := `
 	SELECT 
 		Id, StatusId,
-		CreatedAt, StartedAt, DoneAt, 
+		CreatedAt, StartedAt, KilledAt, DoneAt, 
 		Request, Results 
 	FROM Tasks 
 	WHERE Id = ?;`
@@ -85,6 +86,7 @@ func (r *TaskRepository) Get(id uint64) (DatabaseTask, error) {
 		&t.StatusId,
 		&t.CreatedAt,
 		&t.StartedAt,
+		&t.KilledAt,
 		&t.DoneAt,
 		&buf,
 		&t.Results,
@@ -102,7 +104,46 @@ func (r *TaskRepository) Get(id uint64) (DatabaseTask, error) {
 	return t, nil
 }
 
-func (r *TaskRepository) UpdateStatus(id uint64, status TaskStatus) error {
+func (r *TaskRepository) UpdateStatus(id uint64, newStatus TaskStatus) error {
+	var query string
+
+	switch newStatus {
+	case Running:
+		log.Println("update to running")
+		// update only if current status is Scheduled(1)
+		query = `
+		UPDATE Tasks
+		SET StatusId = (CASE WHEN StatusId = 1 THEN 2 ELSE StatusId END),
+		StartedAt = (CASE WHEN StatusId = 1 THEN CURRENT_TIMESTAMP ELSE StartedAt END)
+		WHERE Id = ?;
+		`
+	case Killed:
+		log.Println("update to killed")
+		// update only if current status is Scheduled(1) OR Running(2)
+		query = `
+		UPDATE Tasks
+		SET StatusId = (CASE WHEN StatusId IN (1, 2) THEN 3 ELSE StatusId END),
+		KilledAt = (CASE WHEN StatusId IN (1, 2) THEN CURRENT_TIMESTAMP ELSE KilledAt END)
+		WHERE Id = ?
+		`
+	case Done:
+		log.Println("update to done")
+		// update only if current status is Running(2)
+		query = `
+		UPDATE Tasks
+		SET StatusId = (CASE WHEN StatusId = 2 THEN 4 ELSE StatusId END),
+		DoneAt = (CASE WHEN StatusId = 2 THEN CURRENT_TIMESTAMP ELSE DoneAt END)
+		WHERE Id = ?;
+		`
+	default:
+		return nil
+	}
+
+	_, err := r.db.Exec(query, id)
+	if err != nil {
+		log.Printf("error on update id=%d %s\n", id, err)
+		return err
+	}
 	return nil
 }
 
