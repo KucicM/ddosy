@@ -39,7 +39,7 @@ curl --request POST \
 }'
 ```
 
-### Get status of the task or results if the task is done
+### Get status and results of a task
 
 ```bash
 curl --request GET \
