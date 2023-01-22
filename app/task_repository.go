@@ -112,6 +112,10 @@ func (r *TaskRepository) Get(id uint64) (DatabaseTask, error) {
 		&buf,
 		&t.Results,
 	)
+	if err == sql.ErrNoRows {
+		return t, nil
+	}
+
 	if err != nil {
 		log.Printf("error getting a task with id=%d %s\n", id, err)
 		return t, err
@@ -126,7 +130,7 @@ func (r *TaskRepository) Get(id uint64) (DatabaseTask, error) {
 }
 
 func (r *TaskRepository) UpdateStatus(id uint64, newStatus TaskStatus) error {
-	log.Printf("update status of id=%d to newStatusId=%d\n", id, newStatus)
+	log.Printf("update status of id=%d to newStatus=%s\n", id, TaskStatusStr[newStatus])
 
 	var query string
 	switch newStatus {
