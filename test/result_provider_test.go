@@ -1,6 +1,7 @@
 package ddosy_test
 
 import (
+	"log"
 	"testing"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 )
 
 func TestSinglePatternMetrics(t *testing.T) {
-	var id uint64 = 10
 	res := &vegeta.Result{
 		Attack:    "attack",
 		Seq:       1,
@@ -26,14 +26,13 @@ func TestSinglePatternMetrics(t *testing.T) {
 	}
 
 	repo := ddosy.NewTaskRepository("test.db", true)
+	id, _ := repo.Save(ddosy.ScheduleRequestWeb{Endpoint: "test"})
 	provider := ddosy.NewRelustProvider(repo)
-	// provider.NewPattern(id)
-
-	provider.Update(id, res)
-
-	provider.Done(id)
+	provider.UpdateRunning(id, res)
+	provider.FinalizeRunning(id)
 
 	out, err := provider.Get(id)
+	log.Println(out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -44,7 +43,6 @@ func TestSinglePatternMetrics(t *testing.T) {
 }
 
 func TestTwoPatternsMetrics(t *testing.T) {
-	var id uint64 = 10
 	res := &vegeta.Result{
 		Attack:    "attack",
 		Seq:       1,
@@ -63,15 +61,14 @@ func TestTwoPatternsMetrics(t *testing.T) {
 	repo := ddosy.NewTaskRepository("test.db", true)
 	provider := ddosy.NewRelustProvider(repo)
 
-	// provider.NewPattern(id)
-	provider.Update(id, res)
+	id, _ := repo.Save(ddosy.ScheduleRequestWeb{Endpoint: "test"})
 
-	// provider.NewPattern(id)
-	provider.Update(id, res)
-
-	provider.Done(id)
+	provider.UpdateRunning(id, res)
+	provider.FinalizeRunning(id)
+	provider.UpdateRunning(id, res)
 
 	out, err := provider.Get(id)
+	log.Println(out)
 	if err != nil {
 		t.Error(err)
 	}

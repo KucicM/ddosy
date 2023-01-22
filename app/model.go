@@ -1,7 +1,9 @@
 package ddosy
 
 import (
+	"bytes"
 	"net/http"
+	"text/template"
 	"time"
 
 	vegeta "github.com/tsenart/vegeta/v12/lib"
@@ -61,6 +63,14 @@ const (
 	Killed
 	Done
 )
+
+var TaskStatusStr = map[TaskStatus]string{
+	Unknown:   "Unknown",
+	Scheduled: "Scheduled",
+	Running:   "Running",
+	Killed:    "Killed",
+	Done:      "Done",
+}
 
 // internal
 type LoadTask struct {
@@ -151,4 +161,48 @@ func NewLoadPattern(pattern LoadPatternWeb) LoadPattern {
 
 func (t *LoadTask) Targeter() vegeta.Targeter {
 	return NewWeightedTargeter(t.traffic)
+}
+
+// reporting
+const reportTemplate = `
+Endpoint: {{ .Endpoint }}
+Status: {{ .Status }}
+Created: {{ .CreatedAt }}
+{{- if .StartedAt }}
+Started: {{ .StartedAt }}
+{{- end}}
+{{- if .DoneAt }}
+Done: {{ .DoneAt }}
+{{- end}}
+{{- if .KilledAt }}
+Killed: {{ .KilledAt }}
+{{- end}}
+{{.Metrics}}
+Request: {{.Request}}
+`
+
+type LoadTaskReport struct {
+	Endpoint  string
+	Status    string
+	CreatedAt string
+	StartedAt string
+	KilledAt  string
+	DoneAt    string
+	Metrics   string
+	Request   string
+}
+
+func (r LoadTaskReport) String() (string, error) {
+	t, err := template.New("report").Parse(reportTemplate)
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	err = t.Execute(&buf, r)
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }

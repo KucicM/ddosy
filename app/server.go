@@ -69,20 +69,26 @@ func (s *Server) runner() {
 		log.Printf("Running task %+v", task)
 		targeter := task.Targeter()
 		attacker := vegeta.NewAttacker()
+		killed := false
 
-	main:
 		for _, load := range task.load {
+			if killed {
+				break
+			}
+
 			for res := range attacker.Attack(targeter, load.pacer, load.duration, "attack") {
 				select {
 				case <-s.kill:
 					attacker.Stop()
 					log.Printf("load test with id=%d killed\n", task.id)
 					s.taskProvider.Kill(task.id)
-					break main
+					killed = true
+					break
 				default:
-					s.resultProvider.Update(task.id, res)
+					s.resultProvider.UpdateRunning(task.id, res)
 				}
 			}
+			s.resultProvider.FinalizeRunning(task.id)
 		}
 		s.taskProvider.Done(task.id)
 	}
