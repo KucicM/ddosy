@@ -25,8 +25,9 @@ func TestSinglePatternMetrics(t *testing.T) {
 		Headers:   nil,
 	}
 
-	provider := ddosy.NewRelustProvider()
-	provider.NewPattern(id)
+	repo := ddosy.NewTaskRepository("test.db", true)
+	provider := ddosy.NewRelustProvider(repo)
+	// provider.NewPattern(id)
 
 	provider.Update(id, res)
 
@@ -59,12 +60,13 @@ func TestTwoPatternsMetrics(t *testing.T) {
 		Headers:   nil,
 	}
 
-	provider := ddosy.NewRelustProvider()
+	repo := ddosy.NewTaskRepository("test.db", true)
+	provider := ddosy.NewRelustProvider(repo)
 
-	provider.NewPattern(id)
+	// provider.NewPattern(id)
 	provider.Update(id, res)
 
-	provider.NewPattern(id)
+	// provider.NewPattern(id)
 	provider.Update(id, res)
 
 	provider.Done(id)

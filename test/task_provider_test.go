@@ -44,3 +44,15 @@ func TestKill(t *testing.T) {
 		t.Errorf("expecting killed status got %d", task.StatusId)
 	}
 }
+
+func TestDone(t *testing.T) {
+	repo := ddosy.NewTaskRepository("test.db", true)
+	provider := ddosy.NewTaskProvider(repo)
+	id, _ := provider.ScheduleTask(ddosy.ScheduleRequestWeb{})
+	provider.Next()
+	provider.Done(id)
+	task, _ := repo.Get(id)
+	if task.StatusId != ddosy.Done {
+		t.Errorf("expecting done status got %d", task.StatusId)
+	}
+}

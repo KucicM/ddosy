@@ -2,7 +2,6 @@ package ddosy
 
 import (
 	"log"
-	"time"
 )
 
 type TaskProvider struct {
@@ -27,8 +26,11 @@ func (p *TaskProvider) Next() *LoadTask {
 	}
 
 	if id == 0 { // no new tasks
-		time.Sleep(time.Second)
 		return nil
+	}
+
+	if err := p.repo.UpdateStatus(id, Running); err != nil {
+		log.Panicf("falied to update task status on kill event %s\n", err)
 	}
 
 	task := NewLoadTask(req)
@@ -38,6 +40,12 @@ func (p *TaskProvider) Next() *LoadTask {
 
 func (p *TaskProvider) Kill(id uint64) {
 	if err := p.repo.UpdateStatus(id, Killed); err != nil {
-		log.Panicf("falide to update db status on kill event %s\n", err)
+		log.Panicf("falied to update task status on kill event %s\n", err)
+	}
+}
+
+func (p *TaskProvider) Done(id uint64) {
+	if err := p.repo.UpdateStatus(id, Done); err != nil {
+		log.Printf("falied to update task status on done event %s\n", err)
 	}
 }

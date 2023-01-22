@@ -48,7 +48,7 @@ func NewServer(cfg ServerConfig) *Server {
 
 	srv := &Server{
 		taskProvider:   NewTaskProvider(repo),
-		resultProvider: NewRelustProvider(),
+		resultProvider: NewRelustProvider(repo),
 		kill:           make(chan struct{}, 1),
 	}
 
@@ -72,8 +72,6 @@ func (s *Server) runner() {
 
 	main:
 		for _, load := range task.load {
-			s.resultProvider.NewPattern(task.id)
-
 			for res := range attacker.Attack(targeter, load.pacer, load.duration, "attack") {
 				select {
 				case <-s.kill:
@@ -86,7 +84,7 @@ func (s *Server) runner() {
 				}
 			}
 		}
-		s.resultProvider.Done(task.id)
+		s.taskProvider.Done(task.id)
 	}
 }
 
