@@ -9,7 +9,6 @@ import (
 
 func main() {
 	port := flag.Int("port", 4000, "port for the server")
-	// queue := flag.Int("queue", 1, "max queue size")
 	dbUrl := flag.String("dbUrl", "test.db", "connetion to database")
 	flag.Parse()
 
