@@ -1,5 +1,9 @@
 # ddosy
 
+Service which can perform load tests on other services.
+
+Overengineed wrapper around [Vegeta](https://github.com/tsenart/vegeta).
+
 ## start the server
 
 ```bash
