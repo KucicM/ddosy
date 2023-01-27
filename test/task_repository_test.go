@@ -254,7 +254,7 @@ func TestUpdateProgress(t *testing.T) {
 
 func TestNoTaskGetNext(t *testing.T) {
 	rep := ddosy.NewTaskRepository("test.db", true)
-	id, _, err := rep.GetNext()
+	id, _, err := rep.GetNextTask()
 	if err != nil {
 		t.Errorf("unexpected error %s\n", err)
 	}
@@ -275,7 +275,7 @@ func TestGetNextTask(t *testing.T) {
 	rep.UpdateStatus(doneId, ddosy.Done)
 
 	// check if no value is returned
-	id, _, err := rep.GetNext()
+	id, _, err := rep.GetNextTask()
 	if err != nil {
 		t.Errorf("unexpected error %s\n", err)
 	}
@@ -291,7 +291,7 @@ func TestGetNextTask(t *testing.T) {
 		t.Error("why are two ids equal?")
 	}
 
-	id, req, err := rep.GetNext()
+	id, req, err := rep.GetNextTask()
 	if err != nil {
 		t.Errorf("unexpected error %s\n", err)
 	}

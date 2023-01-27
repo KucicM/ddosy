@@ -19,7 +19,7 @@ func (p *TaskProvider) ScheduleTask(req ScheduleRequestWeb) (uint64, error) {
 }
 
 func (p *TaskProvider) Next() *LoadTask {
-	id, req, err := p.repo.GetNext()
+	id, req, err := p.repo.GetNextTask()
 	if err != nil {
 		log.Printf("error getting new task from db %s\n", err)
 		return nil
@@ -27,10 +27,6 @@ func (p *TaskProvider) Next() *LoadTask {
 
 	if id == 0 { // no new tasks
 		return nil
-	}
-
-	if err := p.repo.UpdateStatus(id, Running); err != nil {
-		log.Panicf("falied to update task status on kill event %s\n", err)
 	}
 
 	task := NewLoadTask(req)
