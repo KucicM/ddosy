@@ -25,7 +25,7 @@ func NewTaskRepository(dbURL string, truncate bool) *TaskRepository {
 		log.Println("cleaning table")
 		_, err = db.Exec("DROP TABLE IF EXISTS Tasks")
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("faild to drop table %s\n", err)
 		}
 	}
 
@@ -44,14 +44,26 @@ func NewTaskRepository(dbURL string, truncate bool) *TaskRepository {
 	log.Println("create tasks table")
 	_, err = db.Exec(createTable)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("faild to create table %s\n", err)
 	}
 
-	// TODO index on status, id
-
-	rep := &TaskRepository{
-		url: dbURL,
+	// indexes
+	_, err = db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ID_Tasks_IDX ON Tasks (Id);`)
+	if err != nil {
+		log.Fatalf("faild to create id index %s\n", err)
 	}
+
+	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS Status_Tasks_IDX ON Tasks (StatusId);`)
+	if err != nil {
+		log.Fatalf("faild to create statusId index %s\n", err)
+	}
+
+	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS Create_Tasks_IDX ON Tasks (CreatedAt);`)
+	if err != nil {
+		log.Fatalf("faild to create createdAt index %s\n", err)
+	}
+
+
 
 	// backgroud cleaner job
 	go func() {
@@ -59,7 +71,7 @@ func NewTaskRepository(dbURL string, truncate bool) *TaskRepository {
 		for {
 			time.Sleep(time.Hour)
 
-			db, err := sql.Open("sqlite3", rep.url)
+			db, err := sql.Open("sqlite3", dbURL)
 			if err != nil {
 				log.Printf("cleaner cannot open db %s\n", err)
 				continue
@@ -73,7 +85,9 @@ func NewTaskRepository(dbURL string, truncate bool) *TaskRepository {
 		}
 	}()
 
-	return rep
+	return &TaskRepository{
+		url: dbURL,
+	}
 }
 
 func (r *TaskRepository) Save(req ScheduleRequestWeb) (uint64, error) {
