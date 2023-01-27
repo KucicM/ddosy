@@ -42,9 +42,7 @@ type Server struct {
 }
 
 func NewServer(cfg ServerConfig) *Server {
-	repo := NewTaskRepository(cfg.DbUrl, cfg.TruncateDbOnStart) // todo close connection on shutdown
-
-	// todo shutdown
+	repo := NewTaskRepository(cfg.DbUrl, cfg.TruncateDbOnStart)
 
 	srv := &Server{
 		taskProvider:   NewTaskProvider(repo),

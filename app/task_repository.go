@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -46,14 +47,31 @@ func NewTaskRepository(dbURL string, truncate bool) *TaskRepository {
 		log.Fatalln(err)
 	}
 
-	// TODO index on status, id and doneAt
+	// TODO index on status, id
 
 	rep := &TaskRepository{
 		url: dbURL,
-		// db: db,
 	}
 
-	// todo backgroud worker to clean database
+	// backgroud cleaner job
+	go func() {
+		query := `DELETE FROM Tasks WHERE CreatedAt < DATETIME('now', '-7 days');`
+		for {
+			time.Sleep(time.Hour)
+
+			db, err := sql.Open("sqlite3", rep.url)
+			if err != nil {
+				log.Printf("cleaner cannot open db %s\n", err)
+				continue
+			}
+
+			log.Println("running db cleaner")
+			if _, err = db.Exec(query); err != nil {
+				log.Printf("faild to clean db %s\n", err)
+			}
+
+		}
+	}()
 
 	return rep
 }
