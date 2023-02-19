@@ -8,8 +8,9 @@ require (
 )
 
 require (
-	github.com/influxdata/tdigest v0.0.0-20180711151920-a7d76c6f093a // indirect
-	github.com/mailru/easyjson v0.7.0 // indirect
-	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
-	golang.org/x/text v0.3.2 // indirect
+	github.com/influxdata/tdigest v0.0.1 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
+	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 )
